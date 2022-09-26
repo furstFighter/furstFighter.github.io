@@ -1,87 +1,81 @@
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
+
 body {
-    background: linear-gradient(180deg, #292929, #292939) ;
-    position: relative;
-    height: 100vh;
+  background: linear-gradient(180deg, #292929, #292939);
+  position: relative;
+  height: 100vh;
 }
 
 .app {
-    margin: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    z-index: 2;
-}
-.image-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    height: 80vh;
-    border-radius: 6px;
-    z-index: 2;
+  margin: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
 }
 
-.random-image {
-    width: 100%;
-    object-fit: cover;
-    height: 100%;
-}
-.sfw {
-    margin-top: 10px;
-    display: flex;
-}
-
-button {
-    padding: 2px 10px;
-    border-radius: 6px;
-    background-color: #fff;
-    border: none;
-}
-.form-select {
-    padding: 2px 30px 2px 10px;
-    width: 90px;
-}
-.random-waifu {
-    margin-right: 10px;
-}
-.nsfw {
-    margin-top: 10px;
-    display: flex;
-}
-.random-waifu-nsfw {
-    margin-right: 10px;
-}
-
-.toggle {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    color:#fff
-}
-#nsfwToggle {
-    margin-right: 10px;
-}
-/*@media (max-width: 1280px) {*/
-/*    .image-wrapper {*/
-/*        display: flex;*/
-/*        justify-content: center;*/
-/*        align-items: center;*/
-/*        overflow: hidden;*/
-/*        width: 250px;*/
-/*        height: 500px;*/
-/*        border-radius: 6px;*/
-/*        z-index: 2;*/
-/*    }*/
-/*}*/
-
+/* Image */
 @media (max-width: 360px) {
-    .image-wrapper {
-        height: 70vh;
-    }
+  .image-wrapper {
+    height: 70vh;
+  }
+}
+
+.image-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  height: 80vh;
+  border-radius: 6px;
+  z-index: 2;
+}
+
+#waifu-image {
+  width: 100%;
+  object-fit: cover;
+  height: 100%;
+}
+
+/* Generate Button */
+button {
+  padding: 2px 10px;
+  border-radius: 6px;
+  background-color: #fff;
+  border: none;
+  margin-right: 10px;
+  display: inline-block;
+}
+
+/* Options */
+.form-select {
+  padding: 2px 30px 2px 10px;
+  width: 90px;
+}
+
+#sfw {
+  margin-top: 10px;
+  display: flex;
+}
+
+#nsfw {
+  margin-top: 10px;
+  display: flex;
+}
+
+/* Is NSFW Toggle */
+.toggle {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  color: #fff;
+}
+
+#nsfwToggle {
+  margin-right: 10px;
 }
