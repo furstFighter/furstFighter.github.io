@@ -1,74 +1,234 @@
-const prefetchCount = 2;
-const prefetch = { nsfw: [], sfw: [] };
-const NSFWDiv = document.querySelector("#nsfw"),
-	  SFWDiv = document.querySelector("#sfw"),
-	  NSFWOptions = document.querySelector("#nsfw-select"),
-	  SFWOptions = document.querySelector("#sfw-select"),
-	  image = document.querySelector("#waifu-image");
+const apis = {
+    waifupics: {
+        url: "https://api.waifu.pics/{0}/{1}",
+        sfw: [
+            "waifu",
+            "neko",
+            "shinobu",
+            "megumin",
+            "bully",
+            "cuddle",
+            "cry",
+            "hug",
+            "awoo",
+            "kiss",
+            "lick",
+            "pat",
+            "smug",
+            "bonk",
+            "yeet",
+            "blush",
+            "smile",
+            "wave",
+            "highfive",
+            "handhold",
+            "nom",
+            "bite",
+            "glomp",
+            "slap",
+            "kill",
+            "kick",
+            "happy",
+            "wink",
+            "poke",
+            "dance",
+            "cringe",
+        ],
+        nsfw: ["waifu", "neko", "trap", "blowjob"],
+    },
+    nekoslife: {
+        url: "https:/nekos.life/api/v2/img/{1}",
+        sfw: [
+            "smug",
+            "cuddle",
+            "avatar",
+            "slap",
+            "pat",
+            "gecg",
+            "feed",
+            "fox_girl",
+            "lizard",
+            "neko",
+            "hug",
+            "kiss",
+            "ngif",
+        ],
+        nsfw: ["spank"],
+    },
+    anime: {
+        url: "https://anime-api.hisoka17.repl.co/img/{1}",
+        sfw: [
+            "hug",
+            "kiss",
+            "punch",
+            "slap",
+            "wink",
+            "pat",
+            "kill",
+            "cuddle",
+            "waifu",
+        ],
+        nsfw: ["hentai", "boobs", "lesbian"],
+    },
+    catboys: {
+        url: "https://api.catboys.com/{1}",
+        sfw: ["img", "baka"],
+    },
+};
 
-/* Detecting a change for NSFW selections */
-const isNSFW = document.querySelector('input[type=checkbox]');    
+const xhttp = new XMLHttpRequest();
+const api = document.getElementById("api");
+const sfwtype = document.getElementById("sfw-type");
+const nsfwtype = document.getElementById("nsfw-type");
+const category = document.getElementById("category");
+const generateBtn = document.getElementById("generate");
+const loadingSpinner = generateBtn.querySelector(".spinner-border");
+const sourceImage = document.getElementById("show-image");
+
+let oldAPI = "none";
+let oldType = "sfw";
+let type = "sfw";
+
+/**
+ * Gets selected api categories
+ * @returns {string[]} categories
+ */
+function getAPICategory() {
+    const data = apis[api.value];
+    if (!data) return false;
+
+    return data[type];
+}
+
+/**
+ * Updates the category options for the selected API
+ */
 function updateOptions() {
-	NSFWDiv.style.display = isNSFW.checked ? "inline-block" : "none"
-	SFWDiv.style.display = isNSFW.checked ? "none" : "inline-block"
+    // Prevent extra processing
+    if (api.value === oldAPI && oldType === type) return;
 
-	generateWaifu();
+    // Clear categories
+    for (let i = category.options.length - 1; i > 0; i--) {
+        category.options.remove(i);
+    }
+
+    // Get categories
+    const categories = getAPICategory();
+    if (!categories) {
+        category.disabled = true;
+        return;
+    }
+
+    // Add categories
+    category.disabled = false;
+    for (let i = 0; i < categories.length; i++) {
+        category.add(new Option(categories[i], categories[i]));
+    }
 }
 
-/* Fetches an image from both apis */
-async function fetchWaifu() {
-	/* Fetching nsfw */
-	return [
-		(await fetch(`https://api.waifu.pics/nsfw/${NSFWOptions.value}`)
-		.then(response => response.json())
-		.then(query => query.url)),
-	
-		/* Fetching sfw */
-		(await fetch(`https://api.waifu.pics/sfw/${SFWOptions.value}`)
-			.then(response => response.json())
-			.then(query => query.url))
-	]
+/**
+ * Toggles the active button type
+ */
+function toggleButtons() {
+    oldType = type;
+    if (type === "sfw") {
+        type = "nsfw";
+        sfwtype.classList.remove("active");
+        nsfwtype.classList.add("active");
+    } else {
+        type = "sfw";
+        nsfwtype.classList.remove("active");
+        sfwtype.classList.add("active");
+    }
+    updateOptions();
 }
 
-/* Creates an image in the background to load a src */
-function createPrefetchImages() {
-	const prefetchImg = new Image();
-	prefetchImg.style = "display: none;"
-	prefetchImg.src = ""
-	
-	for (let i = 0; i < prefetchCount; i++) {
-		prefetch.nsfw.push(prefetchImg.cloneNode());
-		prefetch.sfw.push(prefetchImg.cloneNode());
-		document.body.appendChild(prefetch.nsfw[i]);
-		document.body.appendChild(prefetch.sfw[i]);
-	}
+/**
+ * Toggles the loading icon for the generate button
+ * @param {boolean} state
+ */
+function toggleLoading(state) {
+    if (!loadingSpinner.classList.contains("d-none") || state) {
+        loadingSpinner.classList.add("d-none");
+        generateBtn.lastChild.textContent = " Generate";
+    } else {
+        loadingSpinner.classList.remove("d-none");
+        generateBtn.lastChild.textContent = " Generating...";
+    }
 }
 
-/* Fetches multiple as a 'prefetch' so it can load faster */
-async function prefetchWaifu() {
-	const nsfwFirst = prefetch.nsfw.shift();
-	const sfwFirst = prefetch.sfw.shift()	
-	const [nsfwSrc, sfwSrc] = await fetchWaifu();
+/**
+ *
+ * @returns {string} URL
+ */
+function generateURL() {
+    // Handling api
+    const apiData = apis[api.value];
+    if (!apiData) return false;
 
-	nsfwFirst.src = nsfwSrc;
-	sfwFirst.src = sfwSrc;
-	prefetch.nsfw.push(nsfwFirst);
-	prefetch.sfw.push(sfwFirst);
+    // Handling category
+    const selectedCat =
+        category.value === "default" ? apiData.default : category.value;
+    if (!selectedCat) return false;
+
+    // Returning formatted string
+    const args = [type, selectedCat];
+    return apiData.url.replace(/{([0-9]+)}/g, function (match, index) {
+        return typeof args[index] == undefined ? match : args[index];
+    });
 }
 
-/* Gets an image and sets it as the src */
-let previousCategory = undefined;
-async function generateWaifu() {
-	if (previousCategory != (isNSFW.checked ? NSFWOptions.value : SFWOptions.value).toString()) {
-		for (let i = 0; i < prefetchCount; i++) { await prefetchWaifu() }
-		previousCategory = (isNSFW.checked ? NSFWOptions.value : SFWOptions.value).toString()
-	} else {
-		prefetchWaifu();
-	}
+/**
+ * Parses data and loads image
+ */
+function handleImage(event) {
+    if (xhttp.status !== 200) return;
+    const data = JSON.parse(xhttp.responseText);
+    if (!data.url) {
+        console.log("Handle Error");
+        return;
+    }
 
-	image.src = isNSFW.checked ? prefetch.nsfw[0].src : prefetch.sfw[0].src;
+    document.getElementById("show-image").src = data.url;
 }
 
-/* Initial setup */
-createPrefetchImages();
-updateOptions();
+/**
+ * Generates images
+ */
+function generateImage() {
+    const url = generateURL();
+    if (!url) {
+        console.log("Failed to generate url");
+        // TODO: Make error prompt
+        return;
+    }
+
+    // Making request
+    toggleLoading();
+    try {
+        xhttp.open("GET", url);
+        xhttp.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+        xhttp.setRequestHeader("Access-Control-Allow-Origin", "*");
+        xhttp.send();
+    } catch (e) {
+        console.log(`Failed to load. ${e}`);
+        toggleLoading();
+    }
+}
+
+// Called when ready
+function init() {
+    // Default settings
+    updateOptions();
+    toggleLoading(false);
+
+    // Add event handlers
+    sourceImage.onload = toggleLoading;
+    api.addEventListener("focusout", updateOptions);
+    xhttp.addEventListener("load", handleImage);
+    xhttp.addEventListener("error", toggleLoading);
+    sfwtype.addEventListener("click", toggleButtons);
+    nsfwtype.addEventListener("click", toggleButtons);
+    generateBtn.addEventListener("click", generateImage);
+}
+document.addEventListener("DOMContentLoaded", init);
